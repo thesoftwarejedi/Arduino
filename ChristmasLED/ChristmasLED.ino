@@ -10,39 +10,60 @@
 #define PIN 7
 //#define LEDS 443
 #define LEDS 300
-#define BRIGHTNESS 75
+#define BRIGHTNESS 100
 #define KINDA_WHITE 50
 
 CRGB leds[LEDS];
 CRGB kindaWhite = CRGB(KINDA_WHITE, KINDA_WHITE, KINDA_WHITE);
 
 void setup() {
-	pinMode(MOTION_PIN, INPUT);
-	pinMode(MOTION_PIN2, INPUT);
 	FastLED.addLeds<WS2812B, PIN, GRB>(leds, LEDS).setCorrection(TypicalLEDStrip);
 	FastLED.setBrightness(BRIGHTNESS);
 	wholeStrip(CRGB::Black);
 }
 
-bool val = LOW;
-bool val2 = LOW;
 void loop() {
-	val = digitalRead(MOTION_PIN);
-	val2 = digitalRead(MOTION_PIN2);
+	candyCane(10);
+}
 
-	for (uint16_t i = 0; i < LEDS; i++) {
-		if (i % 20 == 0) {
-			leds[i] = CRGB::Red;
-		}
-		else if ((i + 10) % 20 == 0) {
-			leds[i] = CRGB::Green;
-		}
-		else {
-			leds[i] = CRGB::White;
+
+
+void candyCane(uint16_t loop) {
+	for (uint16_t l = 0; l < loop; l++) {
+		for (uint16_t m = 0; m < 20; m++) {
+			for (uint16_t i = 0; i < LEDS; i++) {
+				if ((i + m) % 20 == 0) {
+					leds[i] = CRGB::Red;
+					//and the 2 behind
+					if (i > 1)
+						leds[i - 1] = CRGB::Red;
+					if (i > 2)
+						leds[i - 2] = CRGB::Red;
+					if (i > 3)
+						leds[i - 3] = CRGB::Red;
+					if (i > 4)
+						leds[i - 4] = CRGB::Red;
+				}
+				else if ((i + m + 10) % 20 == 0) {
+					leds[i] = CRGB::Green;
+					//and the 2 behind
+					if (i > 1)
+						leds[i - 1] = CRGB::Green;
+					if (i > 2)
+						leds[i - 2] = CRGB::Green;
+					if (i > 3)
+						leds[i - 3] = CRGB::Green;
+					if (i > 4)
+						leds[i - 4] = CRGB::Green;
+				}
+				else {
+					leds[i] = CRGB::Black;
+				}
+			}
+			FastLED.show();
+			delay(40);
 		}
 	}
-  FastLED.show();
-	delay(500);
 }
 
 void wholeStrip(CRGB color) {
