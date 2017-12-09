@@ -25,16 +25,14 @@ void loop() {
   val = digitalRead(MOTION_PIN);
   val2 = digitalRead(MOTION_PIN2);
 
-  for (uint16_t i = 0; i < LEDS; i++) {
-    if (i % 20 == 0) {
-      leds[i] = CRGB::Red;
+  if (val | val2 == HIGH) {
+    wholeStrip(CRGB::Black);
+    fireBall(25, 0, val == HIGH);
+    rainbowBall(180, 255, 250, val == HIGH);
+    while (!mellow(10, val == HIGH)) {
+      wholeStrip(kindaWhite);
     }
-    else if ((i + 10) % 20 == 0) {
-      leds[i] = CRGB::Green;
-    }
-    else {
-      leds[i] = CRGB::White;
-    }
+    wholeStrip(CRGB::Black);
   }
   delay(500);
 }
