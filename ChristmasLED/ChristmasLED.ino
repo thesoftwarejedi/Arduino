@@ -23,60 +23,183 @@ void setup() {
 }
 
 void loop() {
-	candyCane(10);
+	splitHalves(150);
+	delay(5000);
+	twinkle(30, 60, 1);
+	twinkle(30, 50, 4);
+	twinkle(30, 40, 8);
+	twinkle(30, 30, 20);
+	christmas(20, 25);
+	delay(5000);
+	twinkle(30, 60, 1);
+	twinkle(30, 50, 4);
+	twinkle(30, 40, 8);
+	twinkle(30, 30, 20);
+	candyCane(20, 25);
+	delay(5000);
+	twinkle(30, 60, 1);
+	twinkle(30, 50, 4);
+	twinkle(30, 40, 8);
+	twinkle(30, 30, 20);
 }
 
+void splitHalves(uint8_t speed) {
+	//split the halves
+	for (int i = LEDS / 2; i >= 0; i--) {
+		leds[i] = CRGB::Red;
+		FastLED.show();
+	}
+	for (int i = LEDS / 2; i < LEDS; i++) {
+		leds[i] = CRGB::Green;
+		FastLED.show();
+	}
+	delay(1000);
+	//switch colors and flash
+	for (int j = 0; j < 20; j++) {
+		for (int i = 0; i < LEDS; i++)
+			if (leds[i] == (CRGB)CRGB::Red)
+				leds[i] = CRGB::Green;
+			else
+				leds[i] = CRGB::Red;
+		FastLED.show();
+		delay(speed);
+	}
+	//set alternating
+	for (int i = 0; i < LEDS; i++) {
+		if (i % 4 == 0)
+			leds[i] = CRGB::Green;
+		else if (i % 4 == 2)
+			leds[i] = CRGB::Red;
+		else
+			leds[i] = CRGB(0,0,0);
+	}
+	FastLED.show();
+	//switch colors and flash
+	for (int j = 0; j < 20; j++) {
+		for (int i = 0; i < LEDS; i++)
+			if (leds[i] == (CRGB)CRGB::Red)
+				leds[i] = CRGB::Green;
+			else
+				leds[i] = CRGB::Red;
+		FastLED.show();
+		delay(speed * 2);
+	}
+	wholeStrip(CRGB::White);
+	delay(1000);
+	//4 lines over white slow draw
+	int j = LEDS/2;
+	int k = 0;
+	int l = LEDS - 1;
+	for (int i = LEDS/2; i > 80; i--) {
+		j++;
+		k++;
+		l--;
+		leds[i] = CRGB::Red;
+		leds[j] = CRGB::Green;
+		leds[k] = CRGB::Green;
+		leds[l] = CRGB::Red;
+		FastLED.show();
+		delay(speed);
+	}
+	delay(1000);
+	//switch colors and flash
+	for (int j = 0; j < 20; j++) {
+		for (int i = 0; i < LEDS; i++)
+			if (leds[i] == (CRGB)CRGB::Red)
+				leds[i] = CRGB::Green;
+			else
+				leds[i] = CRGB::Red;
+		FastLED.show();
+		delay(speed * 2);
+	}
+	slideUp(5);
+}
 
-
-void candyCane(uint16_t loop) {
+void christmas(uint16_t loop, uint8_t speed) {
 	for (uint16_t l = 0; l < loop; l++) {
-		for (uint16_t m = 0; m < 20; m++) {
-			for (uint16_t i = 0; i < LEDS; i++) {
-				if ((i + m) % 20 == 0) {
-					leds[i] = CRGB::Red;
-					//and the 2 behind
-					if (i > 1)
-						leds[i - 1] = CRGB::Red;
-					if (i > 2)
-						leds[i - 2] = CRGB::Red;
-					if (i > 3)
-						leds[i - 3] = CRGB::Red;
-					if (i > 4)
-						leds[i - 4] = CRGB::Red;
-				}
-				else if ((i + m + 10) % 20 == 0) {
-					leds[i] = CRGB::Green;
-					//and the 2 behind
-					if (i > 1)
-						leds[i - 1] = CRGB::Green;
-					if (i > 2)
-						leds[i - 2] = CRGB::Green;
-					if (i > 3)
-						leds[i - 3] = CRGB::Green;
-					if (i > 4)
-						leds[i - 4] = CRGB::Green;
-				}
-				else {
-					leds[i] = CRGB::Black;
-				}
-			}
+		for (uint8_t m = 0; m < 20; m++) {
+			scrollDown();
+			if (m < 9)
+				leds[0] = CRGB::Red;
+			else if (m >= 10 && m < 19)
+				leds[0] = CRGB::Green;
+			else
+				leds[0] = CRGB::Black;
 			FastLED.show();
-			delay(40);
+			delay(speed);
 		}
+	}
+	slideDown(speed);
+}
+
+void candyCane(uint16_t loop, uint8_t speed) {
+	for (uint16_t l = 0; l < loop; l++) {
+		for (uint8_t m = 0; m < 20; m++) {
+			scrollUp();
+			if (m < 9)
+				leds[LEDS-1] = CRGB::Red;
+			else if (m >= 10 && m < 19)
+				leds[LEDS - 1] = CRGB::White;
+			else
+				leds[LEDS - 1] = CRGB::Black;
+			FastLED.show();
+			delay(speed);
+		}
+	}
+	slideUp(speed);
+}
+
+void twinkle(uint16_t loop, uint8_t speed, uint8_t count) {
+	for (uint16_t l = 0; l < loop; l++) {
+		for (uint8_t c = 0; c < count; c++) {
+			leds[random(LEDS)] = CRGB::White;
+		}
+		FastLED.show();
+		delay(speed);
+		wholeStrip(CRGB::Black);
+	}
+}
+
+void scrollDown() {
+	for (uint16_t i = LEDS - 1; i >= 1; i--)
+		leds[i] = leds[i - 1];
+	leds[0] = CRGB::Black;
+}
+
+void scrollUp() {
+	for (uint16_t i = 0; i < LEDS - 1; i++)
+		leds[i] = leds[i + 1];
+	leds[LEDS - 1] = CRGB::Black;
+}
+
+void slideDown(uint8_t speed) {
+	for (uint16_t i = LEDS - 1; i > 0; i--) {
+		leds[0] = CRGB::Black;
+		scrollDown();
+		FastLED.show();
+		delay(speed);
+	}
+}
+
+void slideUp(uint8_t speed) {
+	for (uint16_t i = 0; i < LEDS - 1; i++) {
+		leds[LEDS-1] = CRGB::Black;
+		scrollUp();
+		FastLED.show();
+		delay(speed);
 	}
 }
 
 void wholeStrip(CRGB color) {
-	for (uint16_t i = 0; i<LEDS; i++) {
-		setLed(i, color, true);
-	}
+	for (uint16_t i = 0; i < LEDS; i++)
+		leds[i] = color;
 	FastLED.show();
 }
 
 void fireBall(uint8_t sz, uint8_t wait, bool forward) {
 	int temp;
 	CRGB color;
-	for (uint16_t i = 0; i<LEDS + sz + 1; i += 2) {
+	for (uint16_t i = 0; i < LEDS + sz + 1; i += 2) {
 		for (uint8_t j = 0; j <= sz; j++) {
 			if (j > i) break;
 			if (j == 0) {
