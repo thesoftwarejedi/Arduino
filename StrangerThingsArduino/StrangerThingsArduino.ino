@@ -5,28 +5,42 @@ Author:  danah
 */
 #include <FastLED.h>
 
-#define PIN 7
+#define PIN 5
 #define LEDS 100
-#define BRIGHTNESS 100
+#define BRIGHTNESS 80
 
 CRGB leds[LEDS];
 String out = "";
 bool normal = false;
+bool blank = false;
+bool defaultOn = true; 
+extern const TProgmemPalette16 christmasLightPalette PROGMEM;
 
 void setup() {
   pinMode(PIN, OUTPUT);
   pinMode(5, OUTPUT);
-  FastLED.addLeds<WS2811, PIN, GRB>(leds, LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2811, PIN, RGB>(leds, LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
   Serial.begin(115200);
 }
 
 void loop() {
   if (out.length() > 0) {
-    Serial.println(out);
-    arrival();
     String ctx = out;
     out = "";
+    if (ctx == "on") {
+      defaultOn = true;
+      normal = false;
+      return;
+    } else if (ctx == "off") {
+      defaultOn = false;
+      blank = false;
+      return;
+    }
+    flicker();
+    blank = false;
+    allOff();
+    FastLED.show();
     uint8_t c;
     for (uint8_t i = 0; i < ctx.length(); i++) {
       c = ctx.charAt(i);
@@ -46,13 +60,43 @@ void loop() {
         delay(1000);
       }
     }
-    departure();
+    flicker();
+    normal = false;
+    blank = false;
   }
-  normalColors(true);
+  if (defaultOn) {
+    normalColors(true);
+  } else {
+    allOff();
+  }
   delay(5000);
 }
 
-void arrival() {
+void flicker() {
+  for (int i = 0; i < 100; i++) {
+    if (random(2) == 1) {
+      normal = false;
+      normalColors(true);
+    } else {
+      blank = false;
+      allOff();
+    }
+    delay(random(150));
+  }
+  normal = false;
+}
+
+void allOff() {
+  if (!blank) {
+    for (int i = 0; i < LEDS; i++) {
+      leds[i] = CRGB::Black;
+    }
+    FastLED.show();
+    blank = true;
+  }
+}
+
+void randomFadeOut(uint8_t wait) {
   normalColors(true);
   for (int j = 40; j >= 0; j--) {
     for (int i = 0; i < LEDS; i++) {
@@ -61,13 +105,14 @@ void arrival() {
       leds[i] = c;
     }
     FastLED.show();
-    delay(100);
+    delay(wait);
   }
 }
 
-void departure() {
+void randomFadeIn() {
   for (int j = 0; j <= 40; j++) {
     normal = false;
+    blank = false;
     normalColors(false);
     for (int i = 0; i < LEDS; i++) {
       CHSV c = rgb2hsv_approximate(leds[i]);
@@ -92,29 +137,9 @@ void normalColors(bool showThem) {
 }
 
 void light(uint8_t i) {
-  switch (i % 7) {
-      case 0:
-        leds[i] = CRGB::Red;
-        break;
-      case 1:
-        leds[i] = CRGB::Orange;
-        break;
-      case 2:
-        leds[i] = CRGB::Yellow;
-        break;
-      case 3:
-        leds[i] = CRGB::Green;
-        break;
-      case 4:
-        leds[i] = CRGB::Blue;
-        break;
-      case 5:
-        leds[i] = CRGB::Purple;
-        break;
-      case 6:
-        leds[i] = CRGB::Indigo;
-        break;
-      }
+  //NOBLEND
+  //LINEARBLEND
+  leds[i] = ColorFromPalette(christmasLightPalette, i * 16, BRIGHTNESS, NOBLEND);
 }
 
 void serialEvent() {
@@ -133,6 +158,26 @@ void serialEvent() {
     delay(2000);
   } while (Serial.available() > 0);
 }
+
+const TProgmemPalette16 christmasLightPalette PROGMEM =
+{
+    CRGB::Yellow,
+    CRGB::Blue,
+    CRGB::Red,
+    CRGB::Green,
+    CRGB::Teal,
+    CRGB::Yellow,
+    CRGB::Pink,
+    CRGB::LightBlue,
+    CRGB::Blue,
+    CRGB::Red,
+    CRGB::Violet,
+    CRGB::DarkOrange,
+    CRGB::Yellow,
+    CRGB::Teal,
+    CRGB::Pink,
+    CRGB::Green
+};
 
 
 
