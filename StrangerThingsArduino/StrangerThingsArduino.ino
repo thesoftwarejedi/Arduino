@@ -5,7 +5,7 @@ Author:  danah
 */
 #include <FastLED.h>
 
-#define PIN 5
+#define PIN 3
 #define LEDS 100
 #define BRIGHTNESS 80
 
@@ -23,12 +23,13 @@ bool normal = false;
 bool blank = false;
 bool defaultOn = true; 
 bool palette = false;
+bool flickerOn = false;
 extern const TProgmemPalette16 christmasLightPalette PROGMEM;
 
 void setup() {
   delay( 3000 ); // power-up safety delay
   pinMode(PIN, OUTPUT);
-  pinMode(5, OUTPUT);
+  pinMode(0, INPUT); //serial
   FastLED.addLeds<WS2811, PIN, RGB>(leds, LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
   
@@ -48,15 +49,24 @@ void loop() {
       defaultOn = true;
       normal = false;
       palette = false;
+      flickerOn = false;
       return;
     } else if (ctx == "off") {
       defaultOn = false;
       blank = false;
       palette = false;
+      flickerOn = false;
+      return;
+    } else if (ctx == "f") {
+      defaultOn = false;
+      blank = false;
+      palette = false;
+      flickerOn = true;
       return;
     } else if (ctx == "0" || ctx == "1" || ctx == "2" || ctx == "3" || ctx == "4" || ctx == "5" || ctx == "6" || ctx == "7" || ctx == "8" || ctx == "9" || ctx == "r") {
       setPalette(ctx[0]);
       palette = true;
+      flickerOn = false;
       return;
     }
     flicker();
@@ -70,7 +80,7 @@ void loop() {
       if (c >= 'a' && c <= 'z') {
         Serial.write(c);
         c = getLightForLetter(c) - 1; //I was one off on the numbering
-        light(c);
+        light(c, true);
         FastLED.show();
         delay(random(600, 1100));
         leds[c] = CRGB::Black;
@@ -101,6 +111,8 @@ void loop() {
     return;
   } else if (defaultOn) {
     normalColors(true);
+  } else if (flickerOn) {
+    flicker();
   } else {
     allOff();
   }
@@ -133,31 +145,31 @@ uint8_t getLightForLetter(uint8_t c) {
     case 'h':
       return 48;
       break;
-    case 'i':
+    case 'q':
       return 52;
       break;
-    case 'j':
+    case 'p':
       return 55;
       break;
-    case 'k':
+    case 'o':
       return 57;
       break;
-    case 'l':
+    case 'n':
       return 60;
       break;
     case 'm':
       return 62;
       break;
-    case 'n':
+    case 'l':
       return 65;
       break;
-    case 'o':
+    case 'k':
       return 68;
       break;
-    case 'p':
+    case 'j':
       return 71;
       break;
-    case 'q':
+    case 'i':
       return 74;
       break;
     case 'r':
@@ -191,7 +203,7 @@ uint8_t getLightForLetter(uint8_t c) {
 }
 
 void flicker() {
-  for (int i = 0; i < 80; i++) {
+  for (int i = 0; i < 100; i++) {
     if (random(2) == 1) {
       normal = false;
       normalColors(true);
@@ -199,7 +211,7 @@ void flicker() {
       blank = false;
       allOff();
     }
-    delay(random(80));
+    delay(random(100));
   }
   normal = false;
 }
@@ -261,17 +273,18 @@ void normalColors(bool showThem) {
   if (!normal) {
     normal = true;
     for (int i = 0; i < LEDS; i++) {
-      light(i);
+      light(i, false);
     }
     if (showThem)
       FastLED.show();
   }
 }
 
-void light(uint8_t i) {
+void light(uint8_t i, bool bright) {
   //NOBLEND
   //LINEARBLEND
-  leds[i] = ColorFromPalette(christmasLightPalette, i * 16, BRIGHTNESS, NOBLEND);
+  leds[i] = ColorFromPalette(christmasLightPalette, i * 16, bright ? 255 : 
+  BRIGHTNESS, NOBLEND);
 }
 
 void serialEvent() {
