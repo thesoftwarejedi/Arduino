@@ -1,3 +1,8 @@
+/*
+  Name:    ChristmasLED.ino
+  Created: 12/9/2017 2:31:39 PM
+  Author:  danah
+*/
 #include <FastLED.h>
 
 #define MOTION_PIN 6
@@ -63,8 +68,10 @@ void loop() {
     olympicShow(55, false);
   }
 
+  delay(10000);
   while (digitalRead(MOTION_PIN) == HIGH)
     delay(10000);
+  delay(10000);
   
   olympicRemove(1000, false);
   wholeStrip(CRGB::Black);
