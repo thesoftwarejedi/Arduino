@@ -10,7 +10,7 @@
 #define PIN 7
 //#define LEDS 443
 #define LEDS 90
-#define BRIGHTNESS 100
+#define BRIGHTNESS 25
 #define KINDA_WHITE 50
 
 CRGB leds[LEDS];
@@ -61,13 +61,15 @@ void loop() {
 
   olympicShow(1000, true);
   
-  for (uint8_t i = 8; i > 0 ; i--) {
-    olympicRemove(75, true);
-    olympicShow(75, true);
-    olympicRemove(75, false);
-    olympicShow(75, false);
+  for (uint8_t i = 2; i > 0 ; i--) {
+    olympicRemove(55, true);
+    olympicShow(55, true);
+    olympicRemove(55, false);
+    olympicShow(55, false);
   }
-  delay(60000);
+
+  while (digitalRead(MOTION_PIN) == HIGH)
+    delay(10000);
   
   olympicRemove(1000, false);
   wholeStrip(CRGB::Black);
@@ -146,7 +148,7 @@ void olympicLight(uint8_t i) {
       leds[i] = CRGB::Yellow;
       break;
     case 2:
-      leds[i] = CRGB::White;
+      leds[i] = kindaWhite;
       break;
     case 3:
       leds[i] = CRGB::Green;
