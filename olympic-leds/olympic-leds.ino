@@ -1,8 +1,3 @@
-/*
-  Name:    ChristmasLED.ino
-  Created: 12/9/2017 2:31:39 PM
-  Author:  danah
-*/
 #include <FastLED.h>
 
 #define MOTION_PIN 6
