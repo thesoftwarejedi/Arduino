@@ -19,7 +19,7 @@ namespace StrangerThingsPi
             while (true) {
                 try
                 {
-                    sp = new SerialPort("/dev/ttyAMA0", 115200, Parity.None, 8, StopBits.One);
+                    sp = new SerialPort("/dev/ttyS0", 115200, Parity.None, 8, StopBits.One);
                     sp.Open();
 
                     HttpListener listen = new HttpListener();
