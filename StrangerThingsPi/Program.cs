@@ -5,6 +5,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace StrangerThingsPi
@@ -38,6 +39,7 @@ namespace StrangerThingsPi
                     try
                     {
                         sp.Close();
+                        Thread.Sleep(2000);
                     } catch { }
                 }
             }
