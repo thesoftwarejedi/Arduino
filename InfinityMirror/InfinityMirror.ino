@@ -5,8 +5,12 @@
 */
 #include <FastLED.h>
 
-#define PIN 12
+#define PIN 7
 #define LEDS 142
+
+//todo switches make pgm and adj selectable
+bool adj = false;
+bool pgm = false;
 
 CRGB leds[LEDS];
 
@@ -28,45 +32,48 @@ void setup() {
 }
 
 void loop() {
-  twinkle(100, 50, 5);
-
-  CRGB color = randomColor();
-  CRGB color2 = randomColor();  //change setled to allow selecting which strip or both, then do multicolor scans
-
-  scan(bottomS, bottomE, color, 3, 10);
-  scan(rightS, rightE, color, 3, 10);
-  scan(topS, topE, color, 3, 10);
-  scan(leftS, leftE, color, 3, 10);
-  scan(bottomS, leftE, color, 1, 5);
+  if (pgm) {
+    twinkle(100, 50, 5);
   
-  flicker(CRGB::White, 6, 200);
-  flicker(color, 50, 200);
-  flicker(CRGB::White, 6, 150);
-  flicker(color, 67, 150);
-  flicker(CRGB::White, 6, 100);
-  flicker(color, 100, 100);
-  flicker(CRGB::White, 6, 50);
-  flicker(color, 200, 50);
-
-  wholeStrip(CRGB::Black);
-  delay(2000);
-
-  wholeStrip(CRGB::White);
-  delay(1000);
-
-  wholeStrip(CRGB::Black);
-  delay(500);
-
-  wholeStrip(CRGB::White);
-  delay(500);
-
-  wholeStrip(CRGB::Black);
-  delay(2000);
+    CRGB color = randomColor();
+    CRGB color2 = randomColor();  //change setled to allow selecting which strip or both, then do multicolor scans
   
+    scan(bottomS, bottomE, color, 3, 10);
+    scan(rightS, rightE, color, 3, 10);
+    scan(topS, topE, color, 3, 10);
+    scan(leftS, leftE, color, 3, 10);
+    scan(bottomS, leftE, color, 1, 5);
+    
+    flicker(CRGB::White, 6, 100);
+    flicker(color, 50, 100);
+    flicker(CRGB::White, 6, 66);
+    flicker(color, 67, 66);
+    flicker(CRGB::White, 6, 33);
+    flicker(color, 100, 33);
+    flicker(CRGB::White, 6, 10);
+    flicker(color, 200, 10);
+  
+    wholeStrip(CRGB::Black);
+    delay(1000);
+  
+    wholeStrip(CRGB::White);
+    delay(500);
+  
+    wholeStrip(CRGB::Black);
+    delay(200);
+  
+    wholeStrip(CRGB::White);
+    delay(200);
+  
+    wholeStrip(CRGB::Black);
+    delay(500);
+  }
   rainbowTravel(200, 255, 1);
 
-  wholeStrip(CRGB::Black);
-  delay(5000);
+  if (pgm) {
+    wholeStrip(CRGB::Black);
+    delay(5000);
+  }
 }
 
 CRGB randomColor() {
@@ -124,8 +131,14 @@ void scan(uint8_t s, uint8_t e, CRGB color, uint8_t c, uint8_t d) {
 }
 
 void rainbowTravel(int d, int c, int s) {
-  for (int i = 0; i < c; i++)
+  Serial.println(d);
+  Serial.println(c);
+  Serial.println(s);
+  
+  for (int i = 0; i < c; i++) {
+    Serial.println(i);
     travel(CRGB::Black, ColorFromPalette(RainbowColors_p, i+=s, 100, LINEARBLEND), d, 1);
+  }
 }
 
 void travel(CRGB c1, CRGB c2, int d, int c) {
@@ -148,6 +161,8 @@ void travel(CRGB c1, CRGB c2, int d, int c) {
 }
 
 void twinkle(uint16_t loop, uint8_t d, uint8_t count) {
+  Serial.println("twinkle");
+  
 	for (uint16_t l = 0; l < loop; l++) {
 		for (uint8_t c = 0; c < count; c++) {
 			leds[random(LEDS)] = CRGB::White;
@@ -209,21 +224,25 @@ void setDistanceBrightness() {
 
 //returns a value of closeness - 0 for far, 100 for near and linear spread otherwise
 int readDistance() {
-  uint16_t sensorValue = analogRead(A0);
-  for (byte i = 0; i < 3; i++) {
-    delay(3);
-    uint16_t sensorValue2 = analogRead(A0);
-    sensorValue = sensorValue2 < sensorValue ? sensorValue2 : sensorValue;
-  }
-  
-  if (sensorValue < 100)
-    return 0;
-  if (sensorValue > 600)
-    return 100;
+  if (adj) {
+    uint16_t sensorValue = analogRead(A0);
+    for (byte i = 0; i < 3; i++) {
+      delay(3);
+      uint16_t sensorValue2 = analogRead(A0);
+      sensorValue = sensorValue2 < sensorValue ? sensorValue2 : sensorValue;
+    }
     
-  sensorValue = sensorValue - 100;
-  sensorValue = sensorValue / 5;
-  Serial.println(sensorValue);
-  return sensorValue;
+    if (sensorValue < 100)
+      return 0;
+    if (sensorValue > 600)
+      return 100;
+      
+    sensorValue = sensorValue - 100;
+    sensorValue = sensorValue / 5;
+    //Serial.println(sensorValue);
+    return sensorValue;
+  } else {
+    return 100;
+  }
 }
 
