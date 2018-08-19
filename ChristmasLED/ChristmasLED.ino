@@ -7,10 +7,10 @@
 
 #define MOTION_PIN 5
 #define MOTION_PIN2 6
-#define PIN 7
+#define PIN 5
 //#define LEDS 443
 #define LEDS 300
-#define BRIGHTNESS 100
+#define BRIGHTNESS 50
 #define KINDA_WHITE 50
 
 CRGB leds[LEDS];
