@@ -6,8 +6,8 @@
 #include <FastLED.h>
 
 #define PIN1 5
-#define LEDS 150
-#define BRIGHTNESS 20
+#define LEDS 46
+#define BRIGHTNESS 5
 #define FADE_LEN 20
 #define MAX_SPEED 1
 #define MIN_SPEED 90
