@@ -34,10 +34,10 @@
 //there are two leds per eye
 #define NUM_LEDS NUM_EYES * 2
 
-//pin 11 for LED data
+//pin for LED data
 #define DATA_PIN 10
 
-//pin 12 for a simple status LED
+//pin for a simple status LED
 #define ERROR_PIN 12
 
 //we start at channel 1
