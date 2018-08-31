@@ -1,6 +1,6 @@
 #include "FastLED.h"
 
-#define NUM_EYES 8.
+#define NUM_EYES 8
 #define NUM_LEDS NUM_EYES * 2
 #define DATA_PIN 5
 
