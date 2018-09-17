@@ -59,6 +59,7 @@ CRGB leds[NUM_LEDS];
 uint8_t eyeOrder[NUM_EYES];
 
 void setup () {  
+  //enable serial in case we want debug statements
   Serial.begin(115200);
   
   pinMode(DATA_PIN, OUTPUT);
@@ -67,14 +68,13 @@ void setup () {
   
   digitalWrite(TRIGGER_G_PIN, LOW);
 
-
   //add LEDs to FastLED library
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
   
   off();
   updateLeds();
   
-  //init to the index
+  //initialize the order to turn on the eyes to the index; shuffle later
   for (uint8_t i = 0; i < NUM_EYES; i++) {
     eyeOrder[i] = i;
   }
@@ -83,7 +83,8 @@ void setup () {
 }
 
 void loop() {  
-  //shuffle
+  
+  //shuffle the order to show the eyes
   for (uint8_t i = 0; i < NUM_EYES; i++) {
     int n = random(0, NUM_EYES);
     uint8_t temp = eyeOrder[n];
@@ -91,13 +92,12 @@ void loop() {
     eyeOrder[i] = temp;
   }
 
-  //now go
+  //come up with our target per eye wait time
   float wait = (float)1 / (float)(NUM_EYES / (float)SECONDS_UNTIL_ON) * (float)1000;
-
-  Serial.println(wait);
   
   CRGB color;
 
+  //go
   for (uint8_t c = 0; c < NUM_EYES; c++) {
     uint8_t c1 = random(MIN_RED, MAX_RED);
     uint8_t c2 = random(MIN_GREEN, MAX_GREEN);
@@ -105,12 +105,13 @@ void loop() {
     color = CRGB(c1, c2, c3);
     showEye(eyeOrder[c], color);
     updateLeds();
+    
     float curWait = random(wait - (wait * (float)((float)RANDOM_PCT / 100)), wait + (wait * (float)((float)RANDOM_PCT / 100)));
-    Serial.println(c);
-    Serial.println(curWait);
+    //todo: make some eye blinking happen here
     delay(curWait);
   }
   
+  //todo: make some eye blinking happen here too
   delay(SECONDS_PAUSE_ON * 1000);
   
   off();
@@ -118,7 +119,7 @@ void loop() {
 
   while (digitalRead(TRIGGER_PIN) == HIGH) {
     delay(200);
-    //sure stays off, was possibly unplugged briefly
+    //make sure it stays off, was possibly unplugged briefly
     updateLeds();
   }
 }
