@@ -18,12 +18,32 @@
 #include <platforms.h>
 #include <power_mgt.h>
 
-//timing
+/*
+ * TIMING
+ */
+//seconds until completely on
 #define SECONDS_UNTIL_ON 15
+//seconds to remain completely on
 #define SECONDS_PAUSE_ON 3
+//a percent of randomness to add to the wait between eyes tunring on
+#define RANDOM_PCT 50
 
-//max is 12 strands of 8
-#define NUM_EYES 1
+/*
+ * COLOR MIN AND MAX
+ */
+#define MAX_RED 35
+#define MIN_RED 20
+#define MAX_GREEN 0
+#define MIN_GREEN 0
+#define MAX_BLUE 0
+#define MIN_BLUE 0
+
+//the number of eyes in the line
+#define NUM_EYES 5*8
+
+/*
+ * don't change these
+ */
 
 //there are two leds per eye
 #define NUM_LEDS NUM_EYES * 2
@@ -33,23 +53,14 @@
 #define TRIGGER_PIN A2
 #define TRIGGER_G_PIN A1
 
-//random color to assign
-#define MAX_RED 35
-#define MIN_RED 20
-#define MAX_GREEN 0
-#define MIN_GREEN 0
-#define MAX_BLUE 0
-#define MIN_BLUE 0
-
-//randomness
-#define RANDOM_PCT 20
-
 //our LEDs
 CRGB leds[NUM_LEDS];
 
 uint8_t eyeOrder[NUM_EYES];
 
 void setup () {  
+  Serial.begin(115200);
+  
   pinMode(DATA_PIN, OUTPUT);
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
   pinMode(TRIGGER_G_PIN, OUTPUT);
@@ -81,7 +92,10 @@ void loop() {
   }
 
   //now go
-  float wait = 1 / (NUM_EYES / SECONDS_UNTIL_ON) * 1000;
+  float wait = (float)1 / (float)(NUM_EYES / (float)SECONDS_UNTIL_ON) * (float)1000;
+
+  Serial.println(wait);
+  
   CRGB color;
 
   for (uint8_t c = 0; c < NUM_EYES; c++) {
@@ -91,7 +105,10 @@ void loop() {
     color = CRGB(c1, c2, c3);
     showEye(eyeOrder[c], color);
     updateLeds();
-    delay(random(wait - wait * RANDOM_PCT, wait + wait * RANDOM_PCT));
+    float curWait = random(wait - (wait * (float)((float)RANDOM_PCT / 100)), wait + (wait * (float)((float)RANDOM_PCT / 100)));
+    Serial.println(c);
+    Serial.println(curWait);
+    delay(curWait);
   }
   
   delay(SECONDS_PAUSE_ON * 1000);
@@ -101,6 +118,8 @@ void loop() {
 
   while (digitalRead(TRIGGER_PIN) == HIGH) {
     delay(200);
+    //sure stays off, was possibly unplugged briefly
+    updateLeds();
   }
 }
 
