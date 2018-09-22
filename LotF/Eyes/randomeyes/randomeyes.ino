@@ -39,7 +39,7 @@
 #define MIN_BLUE 0
 
 //the number of eyes in the line
-#define NUM_EYES 5*8
+#define NUM_EYES 8*12
 
 /*
  * don't change these
@@ -59,14 +59,14 @@ CRGB leds[NUM_LEDS];
 uint8_t eyeOrder[NUM_EYES];
 
 void setup () {  
+  //for debugging perhaps
   Serial.begin(115200);
   
   pinMode(DATA_PIN, OUTPUT);
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
   pinMode(TRIGGER_G_PIN, OUTPUT);
-  
-  digitalWrite(TRIGGER_G_PIN, LOW);
 
+  digitalWrite(TRIGGER_G_PIN, LOW);
 
   //add LEDs to FastLED library
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
@@ -118,7 +118,7 @@ void loop() {
 
   while (digitalRead(TRIGGER_PIN) == HIGH) {
     delay(200);
-    //sure stays off, was possibly unplugged briefly
+    //make sure it stays off, was possibly unplugged briefly
     updateLeds();
   }
 }
