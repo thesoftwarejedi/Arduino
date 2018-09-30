@@ -41,21 +41,22 @@ const int mqtt_port = 1883;
 
 
 /**************************** FOR OTA **************************************************/
-#define SENSORNAME "led-back-deck" //change this to whatever you want to call your device
+#define SENSORNAME "led-deck-top" //change this to whatever you want to call your device
 #define OTApassword "15632ftl172" //the password you will need to enter to upload remotely via the ArduinoIDE
 int OTAport = 8266;
 
 
 
 /************* MQTT TOPICS (change these topics as you wish)  **************************/
-const char* light_state_topic = "ender/deck/led";
-const char* light_set_topic = "ender/deck/led/set";
+const char* light_state_topic = "ender/deck/top";
+const char* light_set_topic = "ender/deck/top/set";
 
 const char* on_cmd = "ON";
 const char* off_cmd = "OFF";
 const char* effect = "solid";
 String effectString = "solid";
 String oldeffectString = "solid";
+
 
 
 
@@ -66,7 +67,7 @@ const int BUFFER_SIZE = JSON_OBJECT_SIZE(10);
 
 
 /*********************************** FastLED Defintions ********************************/
-#define NUM_LEDS    300
+#define NUM_LEDS    392
 #define DATA_PIN    D5
 //#define CLOCK_PIN 5
 #define CHIPSET     WS2812B
@@ -79,7 +80,7 @@ byte realBlue = 0;
 byte red = 255;
 byte green = 255;
 byte blue = 255;
-byte brightness = 255;
+byte brightness = 40;
 
 
 
