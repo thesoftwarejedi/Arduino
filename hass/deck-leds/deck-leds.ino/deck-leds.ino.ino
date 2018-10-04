@@ -24,11 +24,13 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+/*
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_ESP8266_NODEMCU_PIN_ORDER
 #define INTERRUPT_THRESHOLD 1
 #define FASTLED_INTERNAL
+*/
 #include "FastLED.h"
 
 #include <ESP8266mDNS.h>
