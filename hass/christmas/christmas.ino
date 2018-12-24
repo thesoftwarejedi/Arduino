@@ -69,7 +69,7 @@ const int BUFFER_SIZE = JSON_OBJECT_SIZE(10);
 
 
 /*********************************** FastLED Defintions ********************************/
-#define NUM_LEDS    100
+#define NUM_LEDS    278
 
 #define DATA_PIN    D4
 //#define CLOCK_PIN 5
