@@ -1,15 +1,3 @@
-#include <Adafruit_NeoPixel.h>
-
-
-// Using technique from here https://learn.adafruit.com/multi-tasking-the-arduino-part-3/using-neopatterns 
-//    see link above for a good tutorial on this multi-task-ish way of doing things.
-
-// Flicker/Smoke Realistic Candle
-// Keith Kelly 2019-03-04 www.KeithsTestGarage.com
-// Milestone 3 of 3
-
-
-
 #ifdef __AVR__
 #include <avr/power.h>
 #endif
@@ -17,15 +5,14 @@
 // NeoPatterns will require the Adafruit NeoPixel library.  Be sure to install that.  
 #include "NeoPatterns.h"
 
-
 #define NEO_PIN 5    // First RGBW Strip Pin
 #define NEO_COUNT 6  // First RGBW Strip Count
-#define MIC_PIN A1   // Microphone Pin
-#define FLAME_PIN A3 // IR Sensor Pin
+#define MIC_PIN A3   // Microphone Pin
+#define FLAME_PIN A1 // IR Sensor Pin
 #define SMOKE_PIN 3  // Smoke Pin
 #define SMOKE_TIME_MILLIS 2500 // How long should smoke wire be heated?
 
-#define FLAME_DURATION 1500 // millis- duration of flame before lighting candle
+#define FLAME_DURATION 1200 // millis- duration of flame before lighting candle
 
 void Strip1Complete();
 
@@ -45,12 +32,9 @@ unsigned long previousMillis = 0;        // will store last time LED was updated
 unsigned long smokeStartedMillis = 0;    // time smoking started
 unsigned long flameStartedMillis = 0;        // will store last time LED was updated
 
-
 void setup(){
 
     Serial.begin(9600); // uncomment this to figure sensor readings.
-
-    Strip1.setBrightness(100);
 
     // initialize pins
     pinMode(FLAME_PIN, INPUT);
@@ -66,12 +50,10 @@ void setup(){
     // Initialize NeoPixel Strip 1
     Strip1.begin();
     Strip1.show();
-    Strip1.Color1 = Strip1.Color(62, 255, 4, 100);// GRBW
+    Strip1.Color1 = Strip1.Color(62, 255, 4, 100);
     
     blowOutCandle(false);  // Make sure candle is off (but don't smoke)
-
 }
-
 
 void loop(){
     smokeCheck(); // Check if we should stop smoking.  
@@ -135,10 +117,11 @@ void Strip1Complete(){
         Strip1.Interval = random(5,22); // choose random speed in range
     }
     else{  // pattern ended.  Stop, then trigger re-flicker
-        rnd = random(random(3,7),random(20,25)); 
+        rnd = random(random(3, 7),random(20, 55)); 
+
         Strip1.Pixel = random(0,Strip1.numPixels()); // pick a random Pixel
-        Strip1.Interval = 1;
-        Strip1.Color2 = Strip1.Color(rnd,0,0);
+        Strip1.Interval = 1; 
+        Strip1.Color2 = Strip1.Color(0, rnd, 0); //GRBW random red and random white-10
     }
 }
 
@@ -154,9 +137,8 @@ void blowOutCandle(bool shouldSmoke){
   cWipe(0, 10); // synchronously turn the candle off.
 
   // We don't want no stinking patterns.
-  Strip1.ActivePattern = NONE; 
+  Strip1.ActivePattern = NONE;
 }
-
 
 // SMOKING METHODS
 void smokeStart(){
