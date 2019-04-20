@@ -24,7 +24,7 @@ void _settingsAP();
 
 class WiFiMQTTManager {
   public:
-    WiFiMQTTManager(int resetPin, char* APpassword);
+    WiFiMQTTManager();
     //WiFiManager wm;
     void setup(String sketchName);
     void loop();
@@ -38,22 +38,16 @@ class WiFiMQTTManager {
     bool formatFS;
     long lastMsg;
     char deviceType[40];
+    char _friendly_name[40];
+    void reset();
   private:
     void _setupSpiffs();
-    void _checkButton();
-    void _registerDevice();
     void _reconnect();
-    void _subscribeToServices();
-    //void _subscriptionCallback(char* topicIn, byte* message, unsigned int length);
-    //void (*_subscriptionCallback)(char* topicIn, byte* message, unsigned int length);
-    int _resetPin;
-    char _friendly_name[40];
     char _mqtt_server[40];
     char _mqtt_port[6];
+    char _mqtt_username[40];
+    char _mqtt_password[40];
     String _sketchName;
-    char* _APpassword;
-    //char _mqtt_username[40] = "YOURMQTTUSERNAME";
-    //char _mqtt_password[40] = "YOURMQTTPASSWORD";
     int _LED_BUILTIN;
     long _lastMsg;
     char _msg[50];
@@ -64,3 +58,4 @@ class WiFiMQTTManager {
 };
 
 #endif
+

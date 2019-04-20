@@ -15,15 +15,17 @@ NeoPatterns Strip1(NEO_COUNT, NEO_PIN, NEO_RGB + NEO_KHZ800, &Strip1Complete);
 #define DRD_ADDRESS 0
 DoubleResetDetector drd(DRD_TIMEOUT, DRD_ADDRESS);
 
-byte rnd = 0;
-int8_t blowOutAfterMins = 1;
-long startMillis;
+/****************************************FOR JSON***************************************/
+const int BUFFER_SIZE = JSON_OBJECT_SIZE(10);
+#define MQTT_MAX_PACKET_SIZE 512
+#define MILLION 1000000
 
-void configModeCallback (WiFiManager *myWiFiManager) {
-  WiFi.softAPIP();
-  //LED on
-  digitalWrite(LED_BUILTIN, LOW); 
-}
+WiFiMQTTManager wmm; 
+
+byte rnd = 0;
+int8_t blowOutAfterMins = 15;
+int brightness = 110;
+long startMillis;
 
 void setup(){
   Serial.begin(115200);
@@ -36,39 +38,50 @@ void setup(){
   //LED off
   digitalWrite(LED_BUILTIN, HIGH); 
 
-  // Initialize NeoPixel Strip 1
-  Strip1.setBrightness(110);
+  // Initialize NeoPixel Strip
+  Strip1.setBrightness(brightness);
   Strip1.begin();
   Strip1.show();
-  
-  WiFiManager wifiManager;  
-  
+
   if (drd.detectDoubleReset())
-    wifiManager.resetSettings();
+    wmm.reset();
   
-  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 50);
-  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
-  
-  wifiManager.setAPCallback(configModeCallback);
-  if(!wifiManager.autoConnect()) {
-    ESP.reset();
-    delay(1000);
-  }
+  wmm.subscribeTo = &subscribeTo;
+  wmm.subscriptionCallback = &subscriptionCallback;
+  wmm.setup("EnderLab-Candle");
 
   //LED off
   digitalWrite(LED_BUILTIN, HIGH); 
   
   Strip1.Color1 = Strip1.Color(62, 255, 4, 100);
-  blowOutCandle();
   lightCandle();
-  startMillis = millis();
+  sendState();
 }
 
+void subscribeTo() {
+  Serial.println("subscribing to some topics...");  
+  char topic[100];
+  snprintf(topic, sizeof(topic), "%s%s%s", "enderlab/candle/", wmm._friendly_name, "/set");
+  wmm.client->subscribe(topic);
+  Serial.print("subbed ");
+  Serial.println(topic);
+}
+
+bool lit = true;
+
 void loop(){
-  if ((millis() - startMillis) / 1000 / 60 > blowOutAfterMins)
+  if (lit && ((millis() - startMillis) / 1000 / 60 > blowOutAfterMins)) {
     blowOutCandle();
+    sendState();
+  }
   
-  Strip1.Update();
+  if (!lit) {
+    delay(500);
+  } else {
+    Strip1.Update();
+  }
+
+  wmm.loop();
   
   drd.loop();
 }
@@ -89,12 +102,15 @@ void Strip1Complete(){
 }
 
 void lightCandle(){
-    Strip1.Flicker(Strip1.Color1, Strip1.Color2, 20, 5);
+  startMillis = millis();
+  Strip1.Flicker(Strip1.Color1, Strip1.Color2, 20, 5);
+  lit = true;
 }
 
 void blowOutCandle(){
   cWipe(0, 10);
   Strip1.ActivePattern = NONE;
+  lit = false;
 }
 
 void cWipe(uint32_t c, uint8_t wait) {
@@ -103,5 +119,64 @@ void cWipe(uint32_t c, uint8_t wait) {
     Strip1.show();
     delay(wait);
   }
+}
+
+void subscriptionCallback(char* topic, byte* message, unsigned int length) {
+  //not needed, just logging
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+  String messageTemp;
+  
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)message[i]);
+    messageTemp += (char)message[i];
+  }
+  Serial.println();
+
+  //this needed
+  StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+  JsonObject& root = jsonBuffer.parseObject(message);
+  if (!root.success()) {
+    Serial.println("parseObject() failed");
+    return;
+  }
+
+  if (root.containsKey("state")) {
+    
+    if (strcmp(root["state"], "ON") == 0) {
+      lightCandle();
+    }
+    else if (strcmp(root["state"], "OFF") == 0) {
+      blowOutCandle();
+    }
+    
+    if (root.containsKey("brightness")) {
+      Serial.print("rcvd brightness ");
+      brightness = root["brightness"];
+      Serial.println(brightness);
+      Strip1.setBrightness(brightness);
+    }
+  }
+  
+  sendState();
+}
+
+void sendState() {
+  Serial.println("Sending state");
+  char topic[100];
+  snprintf(topic, sizeof(topic), "%s%s", "enderlab/candle/", wmm._friendly_name);
+  
+  char message[200];
+  if (lit) {
+    snprintf(message, sizeof(message), "%s%i%s", "{\"state\":\"ON\",\"brightness\":",brightness,"}");
+  } else {
+    snprintf(message, sizeof(message), "%s%i%s", "{\"state\":\"OFF\",\"brightness\":",brightness,"}");
+  }
+  Serial.print("State ");
+  Serial.println(message);
+  wmm.client->publish(topic, message, true);
+  Serial.print("Sent state to ");
+  Serial.println(topic);
 }
 

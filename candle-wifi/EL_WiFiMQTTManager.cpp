@@ -9,28 +9,22 @@
 
 WiFiManager *wm;
 
-WiFiMQTTManager::WiFiMQTTManager(int resetPin, char* APpassword) {
+WiFiMQTTManager::WiFiMQTTManager() {
   wm = new WiFiManager;
   
   lastMsg = 0;
   formatFS = false;
-  _APpassword = APpassword;
   strcpy(_mqtt_server, "YOURMQTTADDRESS");
   strcpy(_mqtt_port, "1883");
-  _LED_BUILTIN = 2;
+  strcpy(_mqtt_username, "YOURMQTTUSERNAME");
+  strcpy(_mqtt_password, "YOURMQTTPASSWORD");
+  _LED_BUILTIN = D1;
   _lastMsg = 0;
   _value = 0;
   _shouldSaveConfig = false;
-  //byte* message;
 
   Serial.begin(115200);
-  void _placeholderSubscibeTo();
-  subscribeTo = _placeholderSubscibeTo;
-  void _subscriptionCallback(char* topicIn, byte* message, unsigned int length);
-  subscriptionCallback = _subscriptionCallback; 
   wm->setDebugOutput(false);
-  pinMode(resetPin, INPUT);
-  _resetPin = resetPin;
   #ifdef ESP32 
     strcpy(deviceType, "ESP32");
   #elif defined(ESP8266) 
@@ -42,11 +36,17 @@ WiFiMQTTManager::WiFiMQTTManager(int resetPin, char* APpassword) {
 }
 
 void WiFiMQTTManager::loop() {
-  _checkButton();
   if (!client->connected()) {
     _reconnect();
   }  
   client->loop();
+}
+
+void WiFiMQTTManager::reset() {
+    delay(3000);
+    wm->resetSettings();
+    ESP.restart();
+    delay(5000);      
 }
 
 void WiFiMQTTManager::setup(String sketchName) {
@@ -59,7 +59,7 @@ void WiFiMQTTManager::setup(String sketchName) {
   _mac.toLowerCase();
   _mac.replace(":", "");
   _mac.replace("240ac4", "a");            // vendor = Espressif Inc.
-  String _clientId = "ESP_" + _mac;
+  String _clientId = "EnderLab_Candle_" + _mac;
 
   strcpy(chipId, _chipId.c_str());
   strcpy(clientId, _clientId.c_str());
@@ -79,13 +79,13 @@ void WiFiMQTTManager::setup(String sketchName) {
   WiFiManagerParameter custom_friendly_name("name", "Friendly Name", _friendly_name, 40);
   WiFiManagerParameter custom_mqtt_server("server", "MQTT Server", _mqtt_server, 40);
   WiFiManagerParameter custom_mqtt_port("port", "MQTT Port", _mqtt_port, 6);
-  //WiFiManagerParameter custom_mqtt_username("username", "mqtt username", _mqtt_username, 40);
-  //WiFiManagerParameter custom_mqtt_password("password", "mqtt password", _mqtt_password, 40);
+  WiFiManagerParameter custom_mqtt_username("username", "MQTT Username", _mqtt_username, 40);
+  WiFiManagerParameter custom_mqtt_password("password", "MQTT Password", _mqtt_password, 40);
   wm->addParameter(&custom_friendly_name);
   wm->addParameter(&custom_mqtt_server);
   wm->addParameter(&custom_mqtt_port);
-  //wm->addParameter(&custom_mqtt_username);
-  //wm->addParameter(&custom_mqtt_password); 
+  wm->addParameter(&custom_mqtt_username);
+  wm->addParameter(&custom_mqtt_password); 
 
   wm->setAPCallback([&](WiFiManager *myWiFiManager) {
     Serial.println("WMM: entering config mode...");
@@ -94,10 +94,11 @@ void WiFiMQTTManager::setup(String sketchName) {
     Serial.print("WMM: connect your device to WiFi SSID ");
     Serial.print(myWiFiManager->getConfigPortalSSID());
     Serial.println(" to configure WiFi and MQTT...");
+    digitalWrite(LED_BUILTIN, LOW); 
   });
 
   Serial.println("WMM: lets try to connect to WiFi...");
-  if (!wm->autoConnect(clientId, _APpassword)) {
+  if (!wm->autoConnect()) {
     Serial.println("WMM: failed to connect and hit timeout...");
     delay(3000);
     ESP.restart();
@@ -109,8 +110,8 @@ void WiFiMQTTManager::setup(String sketchName) {
   strcpy(_friendly_name, custom_friendly_name.getValue());
   strcpy(_mqtt_server, custom_mqtt_server.getValue());
   strcpy(_mqtt_port, custom_mqtt_port.getValue());
-  //strcpy(_mqtt_username, custom_mqtt_username.getValue());
-  //strcpy(_mqtt_password, custom_mqtt_password.getValue());
+  strcpy(_mqtt_username, custom_mqtt_username.getValue());
+  strcpy(_mqtt_password, custom_mqtt_password.getValue());
   
   //save the custom parameters to FS
   if (_shouldSaveConfig) {
@@ -120,8 +121,8 @@ void WiFiMQTTManager::setup(String sketchName) {
     json["friendly_name"] = _friendly_name;
     json["mqtt_server"] = _mqtt_server;
     json["mqtt_port"]   = _mqtt_port;
-    //json["mqtt_username"]   = _mqtt_username;
-    //json["mqtt_password"]   = _mqtt_password;
+    json["mqtt_username"]   = _mqtt_username;
+    json["mqtt_password"]   = _mqtt_password;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -152,19 +153,26 @@ void WiFiMQTTManager::setup(String sketchName) {
   client->setServer(_mqtt_server, port);
 
   Serial.print("WMM: attempting MQTT connection...");
-  if (!client->connect(clientId)) {
+  bool connectedMqtt = false;
+  if (strlen(_mqtt_username) > 0)
+    connectedMqtt = client->connect(clientId, _mqtt_username, _mqtt_password);
+  else 
+    connectedMqtt = client->connect(clientId);
+  if (!connectedMqtt) {
     Serial.println("failed to connect to MQTT...");
+    reset();   
+  } else {
+    Serial.println("mqtt connected...via setup...");
+    subscribeTo();
+    client->setCallback(subscriptionCallback);
+  }
+}
+
+void reset() {
     delay(3000);
     wm->resetSettings();
     ESP.restart();
     delay(5000);      
-  } else {
-    Serial.println("mqtt connected...via setup...");
-    subscribeTo();
-    _subscribeToServices();
-    client->setCallback(subscriptionCallback);
-  }
-  _registerDevice();
 }
 
 void WiFiMQTTManager::_setupSpiffs(){
@@ -198,8 +206,8 @@ void WiFiMQTTManager::_setupSpiffs(){
           strcpy(_friendly_name, json["friendly_name"]);
           strcpy(_mqtt_server, json["mqtt_server"]);
           strcpy(_mqtt_port, json["mqtt_port"]);
-          //strcpy(_mqtt_username, json["mqtt_username"]);
-          //strcpy(_mqtt_password, json["mqtt_password"]);
+          strcpy(_mqtt_username, json["mqtt_username"]);
+          strcpy(_mqtt_password, json["mqtt_password"]);
         } else {
           Serial.println("WMM: failed to load json config...");
         }
@@ -209,29 +217,6 @@ void WiFiMQTTManager::_setupSpiffs(){
     Serial.println("WMM: failed to mount FS");
     Serial.println("WMM: formating FS...re-upload to try again...");
     SPIFFS.format();
-  }
-}
-
-void WiFiMQTTManager::_checkButton() {
-  // check for button press
-  if ( digitalRead(_resetPin) == LOW ) {
-    // poor mans debounce/press-hold, code not ideal for production
-    delay(50);
-    if( digitalRead(_resetPin) == LOW ){
-      Serial.println("WMM: button Pressed...");
-      // still holding button for 3000 ms, reset settings, code not ideal for production
-      delay(3000); // reset delay hold
-      if( digitalRead(_resetPin) == LOW ){
-        Serial.println("WMM: button held...");
-        Serial.println("WMM: erasing config, restarting...");
-        wm->resetSettings();
-        ESP.restart();
-      }
-
-      _settingsAP();
-      return;
-
-    }
   }
 }
 
@@ -245,14 +230,11 @@ void WiFiMQTTManager::_reconnect() {
       Serial.println("mqtt connected...via reconnect loop...");
       // Subscribe
       subscribeTo();
-      _subscribeToServices();
       client->setCallback(subscriptionCallback);      
-      //client->subscribe("switch/esp1234/led1/output");
     } else {
       Serial.print("mqtt connect failed, rc=");
       Serial.print(client->state());
       Serial.println(" try again in 5 seconds...");
-      _checkButton();
       // Wait 5 seconds before retrying
       delay(5000);
     }
@@ -262,49 +244,8 @@ void WiFiMQTTManager::setDebugOutput(bool b) {
   wm->setDebugOutput(b);
 }
 
-void WiFiMQTTManager::_registerDevice() {
-
-  StaticJsonBuffer<2000> JSONbuffer;
-  JsonObject& root = JSONbuffer.createObject();
-  
-  //Serial.println(WiFi.macAddress());
-
-  //root["time"] = 1351824120;
-  root["deviceType"] = deviceType;
-  root["deviceId"] = deviceId;
-  root["name"] = _friendly_name;
-  root["chipId"] = chipId;
-  root["sketchName"] = _sketchName;
- 
-  char topic[200];
-  char messageBuffer[2000];
-  snprintf(topic, sizeof(topic), "%s%s", "deviceLog/", deviceId);
-  
-  root.printTo(messageBuffer, sizeof(messageBuffer));
-
-  Serial.print("Sending message to MQTT topic: ");
-  Serial.println(topic);
-  root.prettyPrintTo(Serial);
-  Serial.println();
-  Serial.print("messageBuffer: ");
-  Serial.println(messageBuffer);
-
-  if (client->publish(topic, messageBuffer) == true) {
-    Serial.println("WMM: Success sending message to register the device...");
-  } else {
-    Serial.println("WMM: Error sending message to register the device...");
-  }
-
-}
-
 void _placeholderSubscibeTo() {
   Serial.println("WMM: ....placeholderSubscibeTo called...");
-}
-
-void WiFiMQTTManager::_subscribeToServices() {
-  char topic[100];
-  snprintf(topic, sizeof(topic), "%s%s", "service/", deviceId);
-  client->subscribe(topic);
 }
 
 void _settingsAP() {
@@ -316,34 +257,4 @@ void _settingsAP() {
 
 }
 
-void _subscriptionCallback(char* topicIn, byte* message, unsigned int length) {
-  //Serial.println("WMM: _subscriptionCallback called..."); 
-  Serial.print("WMM: Message arrived on topic: ");
-  Serial.print(topicIn);
-  Serial.print(". Message: ");
-  String messageTemp;
-  
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)message[i]);
-    messageTemp += (char)message[i];
-  }
-  Serial.println();
-  
-  if (messageTemp == "restart") {
-    Serial.println("RESTARTING NOW!!!!");
-    ESP.restart();
-  }
 
-  if (messageTemp == "format FS") {
-    Serial.println("FORMATTING FS NOW!!!!");
-    Serial.print("WMM: formatting FS...please wait..... ");
-    //clean FS, for testing
-    SPIFFS.format();
-    ESP.restart();
-  }
-
-  if (messageTemp == "settingsAP") {
-    Serial.println("STARTING Settings AP NOW!!!!");
-    _settingsAP();
-  }  
-}
