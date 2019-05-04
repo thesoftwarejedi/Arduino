@@ -2,6 +2,7 @@
 #include "EL_WiFiMQTTManager.h"
 #include "NeoPatterns.h"
 #include <DoubleResetDetector.h>
+#include <ArduinoOTA.h>
 
 #define NEO_PIN 5
 #define NEO_COUNT 6
@@ -10,10 +11,14 @@ NeoPatterns Strip1(NEO_COUNT, NEO_PIN, NEO_RGB + NEO_KHZ800, &Strip1Complete);
 
 // Number of seconds after reset during which a 
 // subseqent reset will be considered a double reset.
-#define DRD_TIMEOUT 10
+#define DRD_TIMEOUT 2
 // RTC Memory Address for the DoubleResetDetector to use
 #define DRD_ADDRESS 0
 DoubleResetDetector drd(DRD_TIMEOUT, DRD_ADDRESS);
+
+/**************************** FOR OTA **************************************************/
+#define OTApassword "15632ftl172" //the password you will need to enter to upload remotely via the ArduinoIDE
+int OTAport = 8266;
 
 /****************************************FOR JSON***************************************/
 const int BUFFER_SIZE = JSON_OBJECT_SIZE(10);
@@ -49,6 +54,33 @@ void setup(){
   wmm.subscribeTo = &subscribeTo;
   wmm.subscriptionCallback = &subscriptionCallback;
   wmm.setup("EnderLab-Candle");
+  
+  drd.loop();
+
+  //OTA SETUP
+  ArduinoOTA.setPort(OTAport);
+  ArduinoOTA.setHostname(wmm.clientId);
+  ArduinoOTA.setPassword((const char *)OTApassword);
+  Serial.print("OTA hostname ");
+  Serial.println(wmm.clientId);
+  ArduinoOTA.onStart([]() {
+    Serial.println("Starting");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+  ArduinoOTA.begin();
 
   //LED off
   digitalWrite(LED_BUILTIN, HIGH); 
@@ -84,6 +116,8 @@ void loop(){
   wmm.loop();
   
   drd.loop();
+  
+  ArduinoOTA.handle();
 }
 
 void Strip1Complete(){
@@ -178,5 +212,11 @@ void sendState() {
   wmm.client->publish(topic, message, true);
   Serial.print("Sent state to ");
   Serial.println(topic);
+}
+
+char* toChar(String string) {
+  char buffer[string.length() + 1];
+  string.toCharArray(buffer, string.length() + 1);
+  return buffer;
 }
 
