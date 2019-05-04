@@ -15,7 +15,14 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="candle_qi.ino" />
+    <None Include="candle-qi.ino" />
   </ItemGroup>
- 
+  <ItemGroup>
+    <ClInclude Include="neopatterns.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="__vm\.candle-qi.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
